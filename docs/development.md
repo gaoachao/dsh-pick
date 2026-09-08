@@ -1,8 +1,12 @@
 # 开发说明
 
-## 官方基线
+[English README](../README.md) · [中文 README](../README.zh-CN.md) · [设计文档](design.md) · [路线图](roadmap.md)
 
-2026-09-08 核对以下官方文档，以及 `deepseek-ai/deepseek-harness` 的提交 [`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8`](https://github.com/deepseek-ai/deepseek-harness/tree/c389f96bf3a9b6807cb71ed6bdad5849be0df6d8)：
+## 环境与官方基线
+
+建议使用 Node.js 24 和 pnpm 10.30.3；包声明的 Node.js 下限为 22.18.0。骨架的 DSH 验证目标为 `0.1.3-alpha.2`，Cordis 为 `4.0.2`。
+
+2026-09-08 核对了以下官方文档，以及 `deepseek-ai/deepseek-harness` 的提交 [`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8`](https://github.com/deepseek-ai/deepseek-harness/tree/c389f96bf3a9b6807cb71ed6bdad5849be0df6d8)：
 
 - [第一个插件](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/)
 - [打包和安装插件](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish)
@@ -10,41 +14,74 @@
 - [架构与扩展点](https://deepseek-harness.github.io/deepseek-harness/en/reference/)
 - [客户端模块](https://deepseek-harness.github.io/deepseek-harness/en/reference/subsystems/client-modules)
 
-本文档的 DSH 验证目标为 `0.1.3-alpha.2`，Cordis 为 `4.0.2`。不要用 npm 的 `latest` 标签推断当前开发文档对应的版本；预览版本和默认标签可能不同。
+源码提交用于核对开发契约，不代表其全部客户端 API 已在上述 npm 版本通过集成验证。不要用 npm 的 `latest` 标签推断开发文档对应的版本；浏览器功能实施时须重新固定并验证客户端基线。
 
-## 当前实现
+## 本地开发
 
-单 npm 包，ESM，TypeScript 编译到 `lib/`。`package.json` 的 `dsh.bundle.patch` 指向 `cordis.patch.yml`，配置层通过包名挂载 `src/index.ts` 编译出的入口。
+```sh
+git clone https://github.com/gaoachao/dsh-pick.git
+cd dsh-pick
+pnpm install
+pnpm check
+```
 
-入口导出 `name` 和 `apply(ctx)`。它目前仅使用 Cordis 日志服务报告加载成功，不注册工具、服务或 UI。Cordis 声明为 peer dependency，并在开发依赖中固定验证版本；不打包第二份宿主运行时。
+`pnpm check` 执行类型检查、编译，以及真实 Cordis 上下文中的加载与卸载检查。持续编译使用 `pnpm dev`。
 
-`prepare` 支持 GitHub 源码安装，`prepack` 保证 tarball 中包含编译结果。构建只依赖本仓库，不引用 DSH monorepo 的相对路径或 workspace 包。
+### 在隔离的 DSH 环境中加载
 
-## 后续架构
+先在仓库目录完成构建，再运行以下命令。开发配置放在被 Git 忽略的 `.dsh-dev/`，不会使用日常 DSH profile：
 
-预期的数据流：开发页面 picker → 用户审阅反馈 → DSH 客户端 → 当前会话 → 修复与复测。
+```sh
+DSH_HOME="$PWD/.dsh-dev" npx --yes @deepseek-ai/dsh@0.1.3-alpha.2 plugin --profile web add "$PWD"
+DSH_HOME="$PWD/.dsh-dev" npx --yes @deepseek-ai/dsh@0.1.3-alpha.2 --profile web --dump-config
+DSH_HOME="$PWD/.dsh-dev" npx --yes @deepseek-ai/dsh@0.1.3-alpha.2 web
+```
 
-### 开发页面
+配置中应包含 `id: dsh-pick`，Web UI 应能正常启动。入口通过 Cordis logger 记录加载状态；当前不会出现点选按钮。
 
-页面内的 picker 负责选取元素及观测。第一阶段通过显式开发集成接入本地项目；跨 origin iframe 不能直接读取 DOM，不能把 DSH 页面里的 DOM 扫描当成对目标应用的采集。
+DSH 首次启动使用官方推荐的 `npx`。`pnpm dlx` 默认可能跳过宿主的原生依赖构建，导致 `fs_ext.node` 缺失；这与本插件的 TypeScript 构建是两条不同的路径。
 
-React 组件位置通过开发期 instrumentation 或 source map 解析。无法解析时省略 `source`，保留 DOM 信息，不猜测文件名和行号。
+## 安装与分发
 
-### DSH 客户端
+使用上述版本基线的 DSH 从 GitHub 安装：
 
-实现时再增加 `src/client/`、`dsh.client` 和 `exports["./client"]`。按照所选版本的官方 client-module 协议生成可注册的浏览器 bundle；普通 ESM 文件不能直接冒充 DSH client bundle。
+```sh
+dsh plugin --profile web add github:gaoachao/dsh-pick
+```
 
-使用官方 UI 插槽和会话提交入口。先展示将提交的反馈，用户确认后送入明确选中的会话。页面导航或会话切换后应取消或重新确认待发送的选区。
+Git 安装通过 `prepare` 编译 TypeScript。若 pnpm 阻止构建，按 CLI 给出的精确包标识在对应 profile 的 `pnpm-workspace.yaml` 中允许本包构建，然后重试。可使用 `github:gaoachao/dsh-pick#<commit>` 固定提交。
 
-### Host 与协议
+也可以在仓库内先打包，再安装 tarball：
 
-`src/shared/types.ts` 定义拟议的传输对象，`examples/pick-context.ts` 展示字段含义。接入传输前增加运行时校验、大小限制、来源校验和会话绑定。
+```sh
+pnpm pack --pack-destination .artifacts
+dsh plugin --profile web add "$PWD/.artifacts/dsh-pick-0.0.1.tgz"
+```
 
-保持用户反馈与页面观测数据分离；页面文字是数据，不是指令。不默认采集输入值、完整 HTML、URL 查询参数或凭据。截图作为独立产物引用。类型注释表达设计目标，不代表这些规则已经被代码执行。
+本仓库尚未发布到 npm，请使用 GitHub 或本地包。
 
-模型可见的信息必须经过 DSH 的会话日志路径。新增工具时使用 `defineTool`、声明 `inject`，并明确 canonical output 与面向模型的渲染；有副作用的操作走宿主已有策略。
+## 当前工程结构
 
-新增事件监听与服务使用 Cordis 的生命周期机制；手动建立的 DOM 监听、连接、进程等通过 disposer 释放。
+```text
+src/
+  index.ts              Cordis host 入口
+  shared/types.ts       PickContext v1 草案
+examples/
+  pick-context.ts       经过类型检查的手写示例
+scripts/
+  smoke.mjs             真实 Cordis 加载与卸载检查
+docs/
+  design.md             产品与技术设计
+  development.md        开发和分发说明
+  roadmap.md            功能里程碑与验收条件
+cordis.patch.yml        插件配置层
+```
+
+当前采用单 npm 包、ESM，TypeScript 编译到 `lib/`。`package.json` 的 `dsh.bundle.patch` 指向 `cordis.patch.yml`，配置层通过包名挂载 `src/index.ts` 编译出的入口。
+
+入口导出 `name` 和 `apply(ctx)`，目前只使用 Cordis 日志服务，不注册工具、服务或 UI。Cordis 声明为 peer dependency，并在开发依赖中固定验证版本。`prepare` 支持 GitHub 源码安装，`prepack` 保证 tarball 包含编译结果；构建不引用 DSH monorepo 的相对路径或 workspace 包。
+
+目前未声明 `dsh.client`。浏览器 bundle、开发页面适配器和运行时协议校验均属于后续实现，设计见 [设计文档](design.md)。`PickContext` 的类型注释表达设计目标，手写示例不是浏览器观测结果。
 
 ## 验证
 
@@ -53,10 +90,8 @@ pnpm check
 pnpm pack --pack-destination .artifacts
 ```
 
-CI 检查类型、构建、Cordis 加载与卸载，以及打包。实际 DSH 安装与启动按 README 的隔离环境流程验证。
+CI 检查类型、构建、Cordis 加载与卸载，以及打包。实际 DSH 安装与启动按本文的隔离环境流程验证。
 
-初始化时已在 macOS 本地通过：`pnpm check`、tarball 打包、独立消费者在不执行构建脚本且未安装 TypeScript 的环境中加载 tarball，以及隔离 DSH profile 的配置合成和真实 Web 启动（认证后的页面返回 HTTP 200）。这些检查没有调用模型。
+初始化时已在 macOS 本地通过：`pnpm check`、tarball 打包、独立消费者在不执行构建脚本且未安装 TypeScript 的环境中加载 tarball，以及隔离 DSH profile 的配置合成和真实 Web 启动（认证后的页面返回 HTTP 200）。这些检查没有调用模型，也没有验证尚未实现的客户端功能。
 
-DSH 的首次启动使用官方推荐的 `npx`。`pnpm dlx` 默认可能跳过宿主的原生依赖构建，导致 `fs_ext.node` 缺失；这与本插件的 TypeScript 构建是两条不同的路径。
-
-后续浏览器功能需要在真实页面上验证选区、坐标、来源映射、会话切换和卸载清理，不能仅以构建成功认定完成。
+后续浏览器功能需要按设计文档的验收矩阵验证选区、坐标、来源映射、草稿保留、会话切换和卸载清理，不能仅以构建成功认定完成。
