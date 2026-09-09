@@ -4,7 +4,7 @@
 
 在网页上点选元素，把「改这里」的上下文交给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)。
 
-**当前状态：工程骨架（0.0.1）。** 已有可安装的 Cordis bundle、TypeScript 上下文类型、构建和 CI。点选、浏览器连接、源码定位、截图和会话集成尚未实现；插件目前只记录加载日志，不采集页面数据。
+**当前状态：浏览器预览版（M1 进行中）。** 已实现 Vite 开发期接入、元素点选、有限上下文采集和跨窗口通信。DSH 会话接入、源码定位与截图仍待实现；仅安装 DSH host bundle 暂时不会出现点选按钮。
 
 ## 目标体验
 
@@ -31,10 +31,13 @@ pnpm install
 pnpm check
 ```
 
-`pnpm check` 执行类型检查、编译及 Cordis 加载与卸载检查；`pnpm dev` 持续编译。
+`pnpm check` 执行类型检查、编译、Cordis 加载及协议/Vite 测试；`pnpm dev` 持续编译。
+
+运行 `pnpm demo`，打开输出的预览地址，依次点击 **Open target → Pick an element**，在新窗口中的 React 示例页面选择元素，即可查看采集结果。适配器接入和浏览器测试见 [浏览器预览指南（English）](docs/browser-preview.md)。
 
 ## 文档
 
+- [浏览器预览指南（English）](docs/browser-preview.md)：本地演示、Vite 接入和测试。
 - [设计文档](docs/design.md)：范围、架构、协议和验收标准。
 - [开发说明](docs/development.md)：环境、打包和已核对的 DSH 文档。
 - [开发路线图](docs/roadmap.md)：功能里程碑。

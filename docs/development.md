@@ -2,6 +2,10 @@
 
 [English README](../README.md) · [中文 README](../README.zh-CN.md) · [设计文档](design.md) · [路线图](roadmap.md)
 
+## 浏览器预览版
+
+M1 的 Vite 适配器、页面 picker、浏览器桥接及观测运行时校验已实现。运行 `pnpm demo` 可在两个本地窗口验证完整的采集与复核流程。接入参数、限制与浏览器测试命令见 [浏览器预览指南（English）](browser-preview.md)。DSH 会话草稿接入仍未实现。
+
 ## 环境与官方基线
 
 建议使用 Node.js 24 和 pnpm 10.30.3；包声明的 Node.js 下限为 22.18.0。骨架的 DSH 验证目标为 `0.1.3-alpha.2`，Cordis 为 `4.0.2`。
@@ -25,7 +29,7 @@ pnpm install
 pnpm check
 ```
 
-`pnpm check` 执行类型检查、编译，以及真实 Cordis 上下文中的加载与卸载检查。持续编译使用 `pnpm dev`。
+`pnpm check` 执行类型检查、编译、真实 Cordis 加载与卸载、协议边界和 Vite 开发/生产行为测试。持续编译使用 `pnpm dev`；浏览器交互另外运行 `pnpm test:browser`。
 
 ### 在隔离的 DSH 环境中加载
 
@@ -66,8 +70,14 @@ dsh plugin --profile web add "$PWD/.artifacts/dsh-pick-0.0.1.tgz"
 src/
   index.ts              Cordis host 入口
   shared/types.ts       PickContext v1 草案
+  shared/protocol.ts    浏览器消息协议
+  shared/validation.ts  有界观测字段校验
+  picker/               DOM 高亮、选择、采集与页面运行时
+  bridge/               浏览器控制端 API
+  adapters/vite/        Vite 开发期注入
 examples/
   pick-context.ts       经过类型检查的手写示例
+  demo/                 控制端与 React 目标页面
 scripts/
   smoke.mjs             真实 Cordis 加载与卸载检查
 docs/
@@ -81,16 +91,18 @@ cordis.patch.yml        插件配置层
 
 入口导出 `name` 和 `apply(ctx)`，目前只使用 Cordis 日志服务，不注册工具、服务或 UI。Cordis 声明为 peer dependency，并在开发依赖中固定验证版本。`prepare` 支持 GitHub 源码安装，`prepack` 保证 tarball 包含编译结果；构建不引用 DSH monorepo 的相对路径或 workspace 包。
 
-目前未声明 `dsh.client`。浏览器 bundle、开发页面适配器和运行时协议校验均属于后续实现，设计见 [设计文档](design.md)。`PickContext` 的类型注释表达设计目标，手写示例不是浏览器观测结果。
+目前未声明 `dsh.client`。`dsh-pick/bridge` 是独立的浏览器控制端接口，`dsh-pick/vite` 是目标页面适配器；二者都不代表 DSH 客户端已接入。观测子集已有运行时校验，完整 `PickContext` 会话合同仍是草案，手写示例不是浏览器观测结果。设计见 [设计文档](design.md)。
 
 ## 验证
 
 ```sh
 pnpm check
+pnpm exec playwright install chromium
+pnpm test:browser
 pnpm pack --pack-destination .artifacts
 ```
 
-CI 检查类型、构建、Cordis 加载与卸载，以及打包。实际 DSH 安装与启动按本文的隔离环境流程验证。
+CI 检查类型、构建、Cordis 加载与卸载、协议/Vite 测试、Chromium 交互及打包。实际 DSH 安装与启动按本文的隔离环境流程验证。
 
 初始化时已在 macOS 本地通过：`pnpm check`、tarball 打包、独立消费者在不执行构建脚本且未安装 TypeScript 的环境中加载 tarball，以及隔离 DSH profile 的配置合成和真实 Web 启动（认证后的页面返回 HTTP 200）。这些检查没有调用模型，也没有验证尚未实现的客户端功能。
 

@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 Point at a UI element. Give [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) the context to change it.
 
-**Status: scaffold (0.0.1).** The installable Cordis bundle, TypeScript context types, build, and CI are in place. Element picking, browser connection, source mapping, screenshots, and conversation integration are not implemented yet. The plugin currently logs its activation and collects no page data.
+**Status: browser preview (M1 in progress).** Development-only Vite integration, element picking, bounded context capture, and a cross-window bridge are available. DSH conversation integration, source mapping, and screenshots are still pending; installing the DSH host bundle alone does not add a picker button.
 
 ## Planned workflow
 
@@ -31,10 +31,13 @@ pnpm install
 pnpm check
 ```
 
-`pnpm check` runs type checking, compilation, and a Cordis load/unload smoke check. Use `pnpm dev` to watch for changes.
+`pnpm check` runs type checking, compilation, Cordis loading, and protocol/Vite tests. Use `pnpm dev` to watch for changes.
+
+Run `pnpm demo`, open the printed preview URL, and click **Open target → Pick an element**. The React sample opens in a separate window; selected context appears in the preview. See the [browser preview guide](docs/browser-preview.md) for adapter setup and browser tests.
 
 ## Documentation
 
+- [Browser preview](docs/browser-preview.md) — try the demo and integrate the Vite adapter.
 - [Design (中文)](docs/design.md) — scope, architecture, protocol, and acceptance criteria.
 - [Development (中文)](docs/development.md) — setup, packaging, and verified DSH references.
 - [Roadmap (中文)](docs/roadmap.md) — implementation milestones.

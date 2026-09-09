@@ -20,7 +20,11 @@ jobs:
         run: npm install --global pnpm@10.30.3
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Typecheck, build and load plugin
+      - name: Typecheck, build, load plugin and test protocol
         run: pnpm check
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps --only-shell chromium
+      - name: Verify browser picking
+        run: pnpm test:browser
       - name: Verify distributable
         run: pnpm pack --pack-destination .artifacts

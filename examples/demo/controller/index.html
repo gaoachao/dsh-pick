@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>dsh-pick · Browser preview</title>
+  <style>
+    :root{font:16px/1.6 system-ui,sans-serif;color:#25254a;background:#fbfbff;color-scheme:light}
+    *{box-sizing:border-box}body{margin:0}main{max-width:900px;margin:0 auto;padding:44px 24px}
+    header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #dddff0;padding-bottom:20px}
+    header strong{font:700 20px ui-monospace,monospace;letter-spacing:-1px}
+    .badge{font-size:12px;color:#4355db;background:#eceeff;padding:3px 10px;border-radius:4px}
+    h1{font-size:clamp(28px,5vw,44px);line-height:1.12;letter-spacing:-1.5px;margin:44px 0 16px}
+    .intro{max-width:620px;color:#666680;margin:0 0 28px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    button{border:1px solid #dddff0;border-radius:6px;background:white;color:#25254a;font:600 14px/1.4 system-ui,sans-serif;padding:10px 15px;cursor:pointer}
+    button.primary{color:white;background:#4355db;border-color:#4355db}
+    button:disabled{opacity:.4;cursor:default}
+    button:focus-visible{outline:2px solid #b95882;outline-offset:3px}
+    #status{min-height:26px;font-size:14px;color:#4355db;margin:18px 0 26px}
+    .result-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid #dddff0}
+    h2{font-size:16px;margin:0 0 12px}.result-head span{font:12px ui-monospace,monospace;color:#666680}
+    pre{background:#f0f1fa;border-left:3px solid #4355db;min-height:220px;padding:20px;overflow:auto;font:13px/1.6 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+    footer{font-size:13px;color:#666680;margin-top:30px}
+  </style>
+</head>
+<body>
+  <main>
+    <header><strong>dsh-pick</strong><span class="badge">Browser preview</span></header>
+    <h1>Select an element.<br>Inspect its context.</h1>
+    <p class="intro">Open the React sample, start picking, then click an element in the target window. Its captured context appears here for review.</p>
+    <div class="actions">
+      <button id="open" class="primary">Open target</button>
+      <button id="pick" disabled>Pick an element</button>
+      <button id="validate" disabled>Recheck selection</button>
+      <button id="disconnect" disabled>Disconnect</button>
+    </div>
+    <p id="status" role="status">Open the target to connect.</p>
+    <section aria-labelledby="context-title">
+      <div class="result-head"><h2 id="context-title">Captured context</h2><span id="locator">No element selected</span></div>
+      <pre id="result" aria-label="Captured context">Your selection will appear here.</pre>
+    </section>
+    <footer>This preview tests the browser bridge. It does not send messages to DSH. Source mapping and screenshots are planned.</footer>
+  </main>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

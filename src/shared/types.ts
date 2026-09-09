@@ -1,4 +1,4 @@
-/** Draft v1 contract. Runtime validation must be added before accepting browser input. */
+/** Draft conversation contract. Only the M1 page observation subset has runtime validation today. */
 export interface PickContext {
   schemaVersion: 1;
   /** ISO 8601 timestamp of the observation. */

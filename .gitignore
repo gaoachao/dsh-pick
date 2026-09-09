@@ -3,6 +3,8 @@ lib/
 .artifacts/
 .dsh-dev/
 coverage/
+test-results/
+playwright-report/
 *.tsbuildinfo
 *.tgz
 *.log

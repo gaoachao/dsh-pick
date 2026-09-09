@@ -2,7 +2,7 @@
 
 [English README](../README.md) · [中文 README](../README.zh-CN.md) · [开发说明](development.md) · [路线图](roadmap.md)
 
-状态：设计草案。更新日期：2026-09-08。当前实现仅达到 M0；下文描述计划中的行为，不代表 0.0.1 已提供这些能力。
+状态：设计草案，M1 部分实现。更新日期：2026-09-09。已实现 Vite 开发期注入、DOM 点选、有限观测和跨窗口桥接；可运行的边界见 [浏览器预览指南](browser-preview.md)。下文描述完整目标，DSH 会话接入、源码定位和截图仍未实现。
 
 ## 1. 产品目标
 
@@ -16,7 +16,7 @@
 
 | 阶段 | 交付内容 | 明确边界 |
 | --- | --- | --- |
-| M0：当前 | 可加载的 Cordis bundle、构建、CI、`PickContext` 类型草案 | 没有浏览器功能；类型尚无运行时校验 |
+| M0：已完成 | 可加载的 Cordis bundle、构建、CI、`PickContext` 类型草案 | 完整会话上下文仍是草案 |
 | M1：反馈闭环 | 本地 React + Vite 页面接入、元素点选、反馈预览、加入 DSH 草稿 | DSH Web 与目标页面在同一台电脑、同一浏览器；一次一个目标元素 |
 | M2：源码定位 | 开发期 JSX 标注、工作区相对路径、映射来源 | 信息不足时省略位置；不把猜测当作源码映射 |
 | M3：修复验证 | 可选截图、状态复现说明、修复前后对照 | 无法恢复目标状态时明确标为不可比较 |
@@ -59,10 +59,11 @@ M1 不覆盖任意线上网站、跨域 iframe 内部、Shadow DOM 内部、跨�
 | 模块 | 职责 | 代码状态 |
 | --- | --- | --- |
 | `src/index.ts` | Cordis host 入口，后续组合配置和所需服务 | 已有加载日志 |
-| `src/shared/` | 上下文类型、后续消息协议、运行时校验和文本格式化 | 仅有 `types.ts` |
+| `src/shared/` | 上下文类型、消息协议、运行时校验和后续文本格式化 | 已有观测子集校验和桥接协议；完整会话格式化待实现 |
 | `src/client/` | DSH 客户端入口、Pick 面板、连接与会话状态、输入框适配 | 待实现 |
-| `src/picker/` | 目标页面中的 DOM 选择、高亮、有限观测 | 待实现 |
-| `src/adapters/vite/` | 开发期注入 picker；M2 增加源码标注 | 待实现 |
+| `src/bridge/` | 与 DSH 无关的浏览器连接、请求超时和复核接口 | 已实现；用于本地演示 |
+| `src/picker/` | 目标页面中的 DOM 选择、高亮、有限观测 | 已实现 |
+| `src/adapters/vite/` | 开发期注入 picker；M2 增加源码标注 | 已有开发期注入；源码标注待实现 |
 
 M1 的观测通过浏览器传入原生草稿，不需要另建持久化服务或注册模型工具。目标页面不能请求 host 执行命令、读取文件或提交会话。
 
@@ -70,7 +71,7 @@ DSH 客户端入口实施时再增加 `dsh.client`、`exports["./client"]` 和�
 
 DSH 使用 React UI 插槽。Pick 入口通过会话范围的插槽扩展，在作用域内获取会话与输入框能力，不替换整个输入组件、不导入内部实现。事件和插槽注册随 Cordis 生命周期释放；手动创建的 DOM 监听、连接与观察器由 disposer 清理。依据：[UI 插槽](https://deepseek-harness.github.io/deepseek-harness/en/reference/subsystems/slots)。
 
-Vite 适配器只在开发服务器中注入页面脚本；生产构建不包含 picker 或源码元数据。拟提供 `dsh-pick/vite` 导出，具体参数和兼容版本在 M1 接入验证后确定，目前不能作为安装 API 使用。依据：[Vite 插件 API](https://vite.dev/guide/api-plugin.html)。
+Vite 适配器只在开发服务器中注入页面脚本；生产构建不包含 picker。当前已提供 `dsh-pick/vite` 导出，在 Vite 8.2.2 上验证；配置方式见浏览器预览指南，源码标注尚未实现。依据：[Vite 插件 API](https://vite.dev/guide/api-plugin.html)。
 
 ## 5. 浏览器连接与消息协议
 
@@ -86,7 +87,7 @@ Vite 适配器只在开发服务器中注入页面脚本；生产构建不包含
 
 ### 消息外层与上下文分离
 
-以下是拟议协议，尚未加入现有 TypeScript 类型：
+以下是完整协议的设计示意。当前实现使用有界 JSON 字符串，握手、消息类型及字段以 [BridgeMessage](https://github.com/gaoachao/dsh-pick/blob/main/src/shared/protocol.ts) 为准；尚无 DSH 会话绑定：
 
 ```ts
 interface BridgeEnvelope<T> {
